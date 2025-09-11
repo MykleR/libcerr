@@ -1,0 +1,3 @@
+[submodule "utests/utest.h"]
+	path = utests/utest.h
+	url = https://github.com/sheredom/utest.h.git

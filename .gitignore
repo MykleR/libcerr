@@ -1,5 +1,8 @@
 # Prerequisites
 *.d
+compile_commands.json
+libcerr.a
+libcerr.so
 
 # Object files
 *.o
