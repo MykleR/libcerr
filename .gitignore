@@ -3,6 +3,7 @@
 compile_commands.json
 libcerr.a
 libcerr.so
+.cache
 
 # Object files
 *.o
