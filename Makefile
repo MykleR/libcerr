@@ -5,7 +5,7 @@ DIR_HEADERS		:= headers
 DIR_SOURCES		:= sources
 DIR_OBJECTS		:= .objs
 
-SOURCES			:= $(wildcard $(DIR_SOURCES)/*.c)
+SOURCES			:= $(DIR_SOURCES)/libcerr.c
 OBJECTS			:= $(SOURCES:%.c=$(DIR_OBJECTS)/%.o)
 DEPENDENCIES	:= $(OBJECTS:.o=.d)
 
