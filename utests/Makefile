@@ -23,7 +23,7 @@ all: test
 -include $(TEST_DEPENDENCIES)
 
 test: $(NAME)
-	@time (./$(NAME)) && printf " $(MSG_PASSED)" || (printf " $(MSG_FAILED)")
+	@time ./$(NAME)) && printf " $(MSG_PASSED)" || (printf " $(MSG_FAILED)"
 	@rm -f $(NAME)
 	@rm -rf $(TEST_OBJECTS_D)
 
