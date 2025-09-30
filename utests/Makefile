@@ -8,7 +8,7 @@ TEST_SOURCES_D		:= .
 TEST_OBJECTS_D		:= .objs
 TEST_LIB_D			:= utest.h
 
-TEST_SOURCES		:= $(wildcard $(TEST_SOURCES_D)/*.c)
+TEST_SOURCES		:= tests_catch.c tests_try.c tests_main.c
 TEST_OBJECTS		:= $(TEST_SOURCES:%.c=$(TEST_OBJECTS_D)/%.o)
 TEST_DEPENDENCIES	:= $(TEST_OBJECTS:.o=.d)
 
@@ -23,7 +23,7 @@ all: test
 -include $(TEST_DEPENDENCIES)
 
 test: $(NAME)
-	@(./$(NAME)) && printf " $(MSG_PASSED)" || (printf " $(MSG_FAILED)") 
+	@time (./$(NAME)) && printf " $(MSG_PASSED)" || (printf " $(MSG_FAILED)")
 	@rm -f $(NAME)
 	@rm -rf $(TEST_OBJECTS_D)
 

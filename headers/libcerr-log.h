@@ -22,18 +22,18 @@
 # define	__C_GRAY			"\033[90m"
 
 # ifndef NVERBOSE
-#  define __LOG(c, t, msg, ...)	\
-	fprintf(LOG_FDOUT, __F_SEP(c) " > " msg "\n", t, ##__VA_ARGS__)
+#  define __LOG(COLOR, TITLE, MSG, ...)	\
+	fprintf(LOG_FDOUT, __F_SEP(COLOR) " > " MSG "\n", TITLE, ##__VA_ARGS__)
 
 #  define LOG_NL() \
 	fprintf(LOG_FDOUT, "\n")
 # else
-#  define __LOG(c, t, msg, ...)	((void)0)
-#  define LOG_NL()				((void)0)
+#  define __LOG(COLOR, TITLE, MSG, ...)	((void)0)
+#  define LOG_NL()						((void)0)
 # endif
 
-# define LOG_DEBUG(msg, ...)	__LOG(__C_BLUE,		"debug: ", msg, ##__VA_ARGS__)
-# define LOG_INFO(msg, ...)		__LOG(__C_CYAN,      "info: ", msg, ##__VA_ARGS__)
-# define LOG_WARN(msg, ...)		__LOG(__C_YELLOW, "warning: ", msg, ##__VA_ARGS__)
-# define LOG_OK(msg, ...)		__LOG(__C_GREEN,	 "done: ", msg, ##__VA_ARGS__)
-# define LOG_ERR(msg, ...)		__LOG(__C_RED,		"error: ", msg, ##__VA_ARGS__)
+# define LOG_DEBUG(MSG, ...)	__LOG(__C_BLUE,		"debug: ", MSG, ##__VA_ARGS__)
+# define LOG_INFO(MSG, ...)		__LOG(__C_CYAN,      "info: ", MSG, ##__VA_ARGS__)
+# define LOG_WARN(MSG, ...)		__LOG(__C_YELLOW, "warning: ", MSG, ##__VA_ARGS__)
+# define LOG_OK(MSG, ...)		__LOG(__C_GREEN,	 "done: ", MSG, ##__VA_ARGS__)
+# define LOG_ERR(MSG, ...)		__LOG(__C_RED,		"error: ", MSG, ##__VA_ARGS__)

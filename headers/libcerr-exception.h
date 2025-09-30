@@ -1,13 +1,11 @@
 #pragma once
-
-# include <stdint.h>
-# include <stdlib.h>
-# include <setjmp.h>
+#include <stdlib.h>
+#include <setjmp.h>
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
-  #define ERR_TLS _Thread_local
+  #define CERR_TLS _Thread_local
 #else
-  #define ERR_TLS __thread
+  #define CERR_TLS __thread
 #endif
 
 #ifdef __cplusplus
@@ -16,62 +14,80 @@ extern "C" {
 
 // ╔═══════════════════════════════[ DEFINITION ]══════════════════════════════╗
 
-# ifndef ERR_MSG_SIZE
-#  define ERR_MSG_SIZE 1024
-# endif
+#ifndef CERR_MSG_SIZE
+# define CERR_MSG_SIZE		1024
+#endif
+#ifndef CERR_TYPE
+# define CERR_TYPE			unsigned int
+#endif
+#define CERR_NOEXCEPTION	0x0
 
-typedef struct s_err_ctx {
-	struct s_err_ctx	*prev_ctx;
-	const char			*file;
-	jmp_buf				env;
-	char				msg[ERR_MSG_SIZE];
-	int					line:8;
-	int					thrown:8;
-} t_err_ctx;
+typedef struct s_err_ctx t_err_ctx;
+struct s_err_ctx {
+	t_err_ctx	*prev;
+	jmp_buf		frame;
+	CERR_TYPE	thrown;
+	char		msg[CERR_MSG_SIZE];
+};
 
-static ERR_TLS t_err_ctx *g__err = NULL;
+static CERR_TLS t_err_ctx *g__err = NULL;
 
 
 // ╔═════════════════════════════════[ MACROS ]════════════════════════════════╗
 
+# define TRY                                                                   \
+	for (t_err_ctx __err __CERR_CLEANUP=__CERR_INIT, *__p=&__err; __p; __p=0)  \
+		if ((__err.thrown=setjmp(__err.frame)) == CERR_NOEXCEPTION)
 
-# define TRY \
-    for (t_err_ctx __err=__ERR_INIT, *__p=&__err; __p; __p=0,g__err=__err.prev_ctx) \
-		if (setjmp(__err.env) == 0) do
+# define CATCH(CODE)                                                           \
+		else if ((CODE) != CERR_NOEXCEPTION && __err.thrown == (CODE))
 
-# define CATCH \
-	while (0); \
-	else for (;!__err.thrown; __err.thrown=1)
-
-# define THROW(msg, ...) do { \
-	if (__builtin_expect(g__err != NULL, 1)) { \
-		__ERR_SET(msg, ##__VA_ARGS__) \
-		longjmp(g__err->env, 1); \
-	} \
+# define THROW(CODE) do {                                                      \
+	if (__builtin_expect(g__err != NULL, 1)) {                                 \
+		__CERR_SET("");                                                        \
+		longjmp(g__err->frame, (CODE));                                        \
+	}                                                                          \
 } while (0)
 
-# define THROW_IF(cond, msg, ...) do {\
-	if (__builtin_expect((cond), 0)) \
-		THROW(msg, ##__VA_ARGS__); \
+# define THROW_MSG(CODE, MSG, ...) do {                                        \
+	if (__builtin_expect(g__err != NULL, 1)) {                                 \
+		__CERR_SET(MSG, ##__VA_ARGS__);                                        \
+		longjmp(g__err->frame, (CODE));                                        \
+	}                                                                          \
 } while (0)
 
-# define ERR_WHY() (g__err ? g__err->msg : "")
-# define ERR_FILE() (g__err ? g__err->file : "")
-# define ERR_LINE() (g__err ? g__err->line : 0)
+# define THROW_IF(CODE, COND) do {                                             \
+	if (__builtin_expect((COND), 0))                                           \
+		THROW(CODE);                                                           \
+} while (0)
+
+# define THROW_IF_MSG(CODE, COND, MSG, ...) do {                               \
+	if (__builtin_expect((COND), 0))                                           \
+		THROW_MSG(CODE, MSG, ##__VA_ARGS__);                                   \
+} while (0)
+
+#define CERR_WHY() (g__err ? g__err->msg : "")
 
 // ╔══════════════════════════════════[ UTILS ]════════════════════════════════╗
 
-# define __ERR_INIT ({ \
-	t_err_ctx *prev = g__err; \
-	g__err = &__err ; \
-	(t_err_ctx){.prev_ctx=prev, .file=0, .env={0}, .msg={0}, .line=0}; \
+static inline void __err_cleanup(t_err_ctx* err) {
+	if (err) g__err = err->prev;
+}
+
+#define __CERR_CLEANUP                                                         \
+	__attribute__((cleanup(__err_cleanup)))
+
+#define __CERR_INIT ({                                                         \
+	__err = (t_err_ctx){0};                                                    \
+	__err.prev = g__err;                                                       \
+	g__err = &__err;                                                           \
+	__err;                                                                     \
 })
 
-# define __ERR_SET(m, ...) \
-	g__err->file = __FILE__; \
-	g__err->line = __LINE__; \
-	snprintf(g__err->msg, ERR_MSG_SIZE, "Line %d, in %s: "m, \
-		__LINE__, __FILE__, ##__VA_ARGS__);
+#define __CERR_SET(MSG, ...)                                                   \
+	snprintf(g__err->msg, CERR_MSG_SIZE, "Line %d, in %s: "MSG,                \
+		__LINE__, __FILE__, ##__VA_ARGS__)
+
 
 #ifdef __cplusplus
 }
