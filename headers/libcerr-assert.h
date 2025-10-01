@@ -1,6 +1,6 @@
 #pragma once
 
-# include <stdio.h>
+# include <libcerr-exception.h>
 
 // ╔═══════════════════════════════[ ASSERTIONS ]══════════════════════════════╗
 
@@ -10,8 +10,10 @@
 
 #  define ASSERT(COND, MSG, ...) \
 	if (__builtin_expect(!(COND), 0)) { \
+		THROW_MSG(CERR_E_ASSERT, MSG, ##__VA_ARGS__); \
 		__LOG_ASSERT("Failed line %d, in %s: " MSG, __LINE__, __FILE__, ##__VA_ARGS__); \
-		exit(134); }
+		exit(134); \
+	}
 # else
 #  define ASSERT(COND, MSG, ...) ((void)0)
 # endif

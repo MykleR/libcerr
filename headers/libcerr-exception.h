@@ -1,4 +1,5 @@
 #pragma once
+#include "libcerr-log.h"
 #include <stdlib.h>
 #include <setjmp.h>
 
@@ -20,7 +21,11 @@ extern "C" {
 #ifndef CERR_TYPE
 # define CERR_TYPE			unsigned int
 #endif
-#define CERR_NOEXCEPTION	0x0
+
+typedef enum e_cerr_exception {
+	CERR_E_NONE = 0,
+	CERR_E_ASSERT = 1
+}	t_cerr_exception;
 
 typedef struct s_err_ctx t_err_ctx;
 struct s_err_ctx {
@@ -37,34 +42,49 @@ static CERR_TLS t_err_ctx *g__err = NULL;
 
 # define TRY                                                                   \
 	for (t_err_ctx __err __CERR_CLEANUP=__CERR_INIT, *__p=&__err; __p; __p=0)  \
-		if ((__err.thrown=setjmp(__err.frame)) == CERR_NOEXCEPTION)
+		if ((__err.thrown=setjmp(__err.frame)) == CERR_E_NONE)
 
-# define CATCH(CODE)                                                           \
-		else if ((CODE) != CERR_NOEXCEPTION && __err.thrown == (CODE))
+// ---- CATCH
 
-# define THROW(CODE) do {                                                      \
+# define CATCH(EXCEPTION)                                                      \
+		else if ((EXCEPTION) != CERR_E_NONE && __err.thrown == (EXCEPTION))
+
+# define CATCH_ALL()                                                           \
+		else
+
+# define CATCH_LOG(EXCEPTION)                                                  \
+	CATCH(EXCEPTION) do { LOG_ERR("%s", CERR_WHY()); } while (0)
+
+# define CATCH_ALL_LOG()                                                       \
+	CATCH_ALL() do { LOG_ERR("%s", CERR_WHY()); } while (0)
+
+// ---- THROW
+
+# define THROW(EXCEPTION) do {                                                 \
 	if (__builtin_expect(g__err != NULL, 1)) {                                 \
 		__CERR_SET("");                                                        \
-		longjmp(g__err->frame, (CODE));                                        \
+		longjmp(g__err->frame, (EXCEPTION));                                   \
 	}                                                                          \
 } while (0)
 
-# define THROW_MSG(CODE, MSG, ...) do {                                        \
+# define THROW_MSG(EXCEPTION, MSG, ...) do {                                   \
 	if (__builtin_expect(g__err != NULL, 1)) {                                 \
 		__CERR_SET(MSG, ##__VA_ARGS__);                                        \
-		longjmp(g__err->frame, (CODE));                                        \
+		longjmp(g__err->frame, (EXCEPTION));                                   \
 	}                                                                          \
 } while (0)
 
-# define THROW_IF(CODE, COND) do {                                             \
+# define THROW_IF(EXCEPTION, COND) do {                                        \
 	if (__builtin_expect((COND), 0))                                           \
-		THROW(CODE);                                                           \
+		THROW(EXCEPTION);                                                      \
 } while (0)
 
-# define THROW_IF_MSG(CODE, COND, MSG, ...) do {                               \
+# define THROW_IF_MSG(EXCEPTION, COND, MSG, ...) do {                          \
 	if (__builtin_expect((COND), 0))                                           \
-		THROW_MSG(CODE, MSG, ##__VA_ARGS__);                                   \
+		THROW_MSG(EXCEPTION, MSG, ##__VA_ARGS__);                              \
 } while (0)
+
+// ---- OTHER
 
 #define CERR_WHY() (g__err ? g__err->msg : "")
 

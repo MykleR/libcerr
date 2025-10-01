@@ -13,7 +13,7 @@ TEST_OBJECTS		:= $(TEST_SOURCES:%.c=$(TEST_OBJECTS_D)/%.o)
 TEST_DEPENDENCIES	:= $(TEST_OBJECTS:.o=.d)
 
 CXX					:= gcc
-CXXFLAGS			:= -O3
+CXXFLAGS			:= -O3 -g -fsanitize=address -fno-omit-frame-pointer
 IFLAGS				:= -I $(TARGET_HEADERS) -I $(TEST_LIB_D)
 
 DIR_DUP			= mkdir -p $(@D)
