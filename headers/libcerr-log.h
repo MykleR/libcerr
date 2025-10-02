@@ -9,7 +9,7 @@
 # endif
 
 # define 	__F_COLOR(C, X)		C X __F_RESET
-# define	__F_SEP(C)			__F_BOLD(__F_COLOR(C, "%8s"))
+# define	__F_SEP(C)			__F_BOLD(__F_COLOR(C, "%10s"))
 # define	__F_BOLD(X)			"\033[1m" X "\033[22m"
 # define 	__F_ITALIC(X)		"\033[3m" X "\033[23m"
 # define	__F_RESET			"\033[0m"
