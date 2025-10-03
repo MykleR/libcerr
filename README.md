@@ -43,10 +43,11 @@ CATCH(MY_EXCEPTION, MY_OTHER_EXCEPTION) {
 
 #### Logging
 
-> The logging macros provide colorful, formatted output to `stderr` by default. There are four different log levels,
-> 0 is nothing, 1 is OK/ERR, 2 is WARN/OK/ERR, 3 is INFO/WARN/OK/ERR and 4 is everything before with DEBUG
+> The logging macros provide colorful, formatted output to `stderr` by default.
+> Use LOG_LEVEL to filter output: 0 is nothing, 1 is OK/ERR, 2 adds WARN, 3 adds INFO and 4 adds DEBUG.
 
 ```c
+#define LOG_FDOUT stdout
 #define LOG_LEVEL 2
 #include <libcerr.h>
 
@@ -57,6 +58,8 @@ LOG_WARN("This is a warning message.");
 LOG_ERR("This is a fatal error message.);
 LOG_OK("Application finished.");
 ```
+<img src="https://github.com/MykleR/libcerr/blob/main/screenshots/screenshot_20251003_122852.png" height="200"/>
+
 #### Assertions
  > Assertions will throw an exception (if in try) or exit the program when the condition is not met.
 ```c
@@ -73,7 +76,7 @@ ASSERT(x == 10, "This will not... bye");
 
 ### Prerequisites
 
-> - C Compiler (like `gcc` or `Clang`)
+> - C Compiler `GCC` or `Clang`
 > - `GNU Make`
 
 ### Installation & Usage
