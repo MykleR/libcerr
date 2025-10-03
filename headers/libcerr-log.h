@@ -4,8 +4,14 @@
 
 // ╔════════════════════════════════[ LOGGING ]═══════════════════════════════╗
 
+# define __LOG_LEVELS 4
+
 # ifndef LOG_FDOUT
 #  define LOG_FDOUT stderr
+# endif
+
+# ifndef LOG_LEVEL
+#  define LOG_LEVEL __LOG_LEVELS
 # endif
 
 # define 	__F_COLOR(C, X)		C X __F_RESET
@@ -32,8 +38,32 @@
 #  define LOG_NL()						((void)0)
 # endif
 
-# define LOG_DEBUG(MSG, ...)	__LOG(__C_BLUE,		"debug: ", MSG, ##__VA_ARGS__)
-# define LOG_INFO(MSG, ...)		__LOG(__C_CYAN,      "info: ", MSG, ##__VA_ARGS__)
-# define LOG_WARN(MSG, ...)		__LOG(__C_YELLOW, "warning: ", MSG, ##__VA_ARGS__)
-# define LOG_OK(MSG, ...)		__LOG(__C_GREEN,	 "done: ", MSG, ##__VA_ARGS__)
-# define LOG_ERR(MSG, ...)		__LOG(__C_RED,		"error: ", MSG, ##__VA_ARGS__)
+# if LOG_LEVEL >= __LOG_LEVELS
+#  define LOG_DEBUG(MSG, ...) __LOG(__C_BLUE, "debug: ", MSG, ##__VA_ARGS__)
+# else
+#  define LOG_DEBUG(MSG, ...) ((void)0)
+# endif
+
+# if LOG_LEVEL >= __LOG_LEVELS - 1
+#  define LOG_INFO(MSG, ...) __LOG(__C_CYAN, "info: ", MSG, ##__VA_ARGS__)
+# else
+#  define LOG_INFO(MSG, ...) ((void)0)
+# endif
+
+# if LOG_LEVEL >= __LOG_LEVELS - 2
+#  define LOG_WARN(MSG, ...) __LOG(__C_YELLOW, "warning: ", MSG, ##__VA_ARGS__)
+# else
+#  define LOG_WARN(MSG, ...) ((void)0)
+# endif
+
+# if LOG_LEVEL >= __LOG_LEVELS - 3
+#  define LOG_OK(MSG, ...) __LOG(__C_GREEN, "done: ", MSG, ##__VA_ARGS__)
+# else
+#  define LOG_OK(MSG, ...) ((void)0)
+# endif
+
+# if LOG_LEVEL >= __LOG_LEVELS - 3
+#  define LOG_ERR(MSG, ...) __LOG(__C_RED, "error: ", MSG, ##__VA_ARGS__)
+# else
+#  define LOG_ERR(MSG, ...) ((void)0)
+# endif
