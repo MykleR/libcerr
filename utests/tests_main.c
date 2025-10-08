@@ -1,4 +1,3 @@
-#include "libcerr-log.h"
 #include "tests.h"
 #include <time.h>
 

@@ -68,18 +68,16 @@ static CERR_TLS t_err_ctx *g__err = NULL;
 
 // DEFAULT THROW
 # define THROW(EXCEPTION) do {                                                 \
-	if (__builtin_expect(g__err != NULL, 1)) {                                 \
-		__CERR_SET("");                                                        \
-		longjmp(g__err->frame, (EXCEPTION));                                   \
-	}                                                                          \
+	if (__CERR_IS_THROWABLE) break;                                            \
+	__CERR_SET("");                                                            \
+	longjmp(g__err->frame, (EXCEPTION));                                       \
 } while (0)
 
 // Throw exception and specify reason
 # define THROW_MSG(EXCEPTION, MSG, ...) do {                                   \
-	if (__builtin_expect(g__err != NULL, 1)) {                                 \
-		__CERR_SET(MSG, ##__VA_ARGS__);                                        \
-		longjmp(g__err->frame, (EXCEPTION));                                   \
-	}                                                                          \
+	if (__CERR_IS_THROWABLE) break;                                            \
+	__CERR_SET(MSG, ##__VA_ARGS__);                                            \
+	longjmp(g__err->frame, (EXCEPTION));                                       \
 } while (0)
 
 // Throw only if condition is true
@@ -116,6 +114,10 @@ static inline void __err_cleanup(t_err_ctx* err) {
 		__catched = (__err.thrown == __errs[__i]);                             \
 	__catched;                                                                 \
 })
+
+// Check if exception can be thrown
+#define __CERR_IS_THROWABLE                                                    \
+	__builtin_expect(!g__err || g__err->thrown != CERR_E_NONE, 0)
 
 // Clear and restore to previous exception context
 #define __CERR_CLEANUP                                                         \
