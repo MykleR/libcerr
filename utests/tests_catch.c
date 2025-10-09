@@ -4,7 +4,7 @@ static inline void throw(void) {
 	THROW_MSG(ERROR, GOOD_CATCH_MSG);
 }
 static inline void divide(int UNUSED a, int b) {
-	THROW_IF_MSG(ERROR, !b, "Division by zero");
+	THROW_IF_MSG(!b, ERROR, "Division by zero");
 }
 
 UTEST(catch, simple) {

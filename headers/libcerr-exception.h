@@ -81,13 +81,13 @@ static CERR_TLS t_err_ctx *g__err = NULL;
 } while (0)
 
 // Throw only if condition is true
-# define THROW_IF(EXCEPTION, COND) do {                                        \
+# define THROW_IF(COND, EXCEPTION) do {                                        \
 	if (__builtin_expect((COND), 0))                                           \
 		THROW(EXCEPTION);                                                      \
 } while (0)
 
 // Throw only if condition is true and specify reason
-# define THROW_IF_MSG(EXCEPTION, COND, MSG, ...) do {                          \
+# define THROW_IF_MSG(COND, EXCEPTION, MSG, ...) do {                          \
 	if (__builtin_expect((COND), 0))                                           \
 		THROW_MSG(EXCEPTION, MSG, ##__VA_ARGS__);                              \
 } while (0)
