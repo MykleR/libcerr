@@ -1,7 +1,9 @@
 #pragma once
 #include "libcerr-log.h"
+#include "libcerr-assert.h"
 #include <stdlib.h>
 #include <setjmp.h>
+#include <stdint.h>
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
   #define CERR_TLS _Thread_local
@@ -15,18 +17,16 @@ extern "C" {
 
 // ╔═══════════════════════════════[ DEFINITION ]══════════════════════════════╗
 
-#ifndef CERR_MSG_SIZE
-# define CERR_MSG_SIZE		1024
+#define		CERR_E_NONE		0
+#define		CERR_E_RUNTIME	1
+
+#ifndef		CERR_MSG_SIZE
+# define	CERR_MSG_SIZE 1024
 #endif
-#ifndef CERR_TYPE
-# define CERR_TYPE			unsigned int
+#ifndef		CERR_TYPE
+# define	CERR_TYPE uint_fast32_t
 #endif
 
-typedef enum e_cerr_exception {
-	CERR_E_NONE = 0,
-	CERR_E_ASSERT = 1,
-	CERR_E_RUNTIME = 2
-}	t_cerr_exception;
 
 typedef struct s_err_ctx t_err_ctx;
 struct s_err_ctx {
@@ -68,14 +68,14 @@ static CERR_TLS t_err_ctx *g__err = NULL;
 
 // DEFAULT THROW
 # define THROW(EXCEPTION) do {                                                 \
-	if (__CERR_IS_THROWABLE) break;                                            \
+	__CERR_IS_THROWABLE(EXCEPTION);\
 	__CERR_SET("");                                                            \
 	longjmp(g__err->frame, (EXCEPTION));                                       \
 } while (0)
 
 // Throw exception and specify reason
 # define THROW_MSG(EXCEPTION, MSG, ...) do {                                   \
-	if (__CERR_IS_THROWABLE) break;                                            \
+	__CERR_IS_THROWABLE(EXCEPTION);\
 	__CERR_SET(MSG, ##__VA_ARGS__);                                            \
 	longjmp(g__err->frame, (EXCEPTION));                                       \
 } while (0)
@@ -116,8 +116,9 @@ static inline void __err_cleanup(t_err_ctx* err) {
 })
 
 // Check if exception can be thrown
-#define __CERR_IS_THROWABLE                                                    \
-	__builtin_expect(!g__err || g__err->thrown != CERR_E_NONE, 0)
+#define __CERR_IS_THROWABLE(EXCEPTION)                                         \
+	ASSERT(g__err != NULL && g__err->thrown == CERR_E_NONE,                    \
+		"Thrown exception[%d] not caught.", (EXCEPTION))
 
 // Clear and restore to previous exception context
 #define __CERR_CLEANUP                                                         \

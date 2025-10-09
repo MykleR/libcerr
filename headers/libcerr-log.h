@@ -18,7 +18,7 @@
 # define	__F_SEP(C)			__F_BOLD(__F_COLOR(C, "%10s"))
 # define	__F_BOLD(X)			"\033[1m" X "\033[22m"
 # define 	__F_ITALIC(X)		"\033[3m" X "\033[23m"
-# define	__F_RESET			"\033[0m"
+# define	__C_RED_B			"\033[40m\033[91m"
 # define	__C_RED				"\033[31m"
 # define	__C_GREEN			"\033[32m"
 # define	__C_YELLOW			"\033[33m"
@@ -26,6 +26,7 @@
 # define	__C_MAGENTA			"\033[35m"
 # define	__C_CYAN			"\033[36m"
 # define	__C_GRAY			"\033[90m"
+# define	__F_RESET			"\033[0m"
 
 # ifndef NVERBOSE
 #  define __LOG(COLOR, TITLE, MSG, ...)	\
