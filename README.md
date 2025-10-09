@@ -17,7 +17,7 @@
 
 ## 📖 Basic Usage
 
-#### Catching Exceptions
+### Catching Exceptions
 ```c
 #include <libcerr.h>
 // Define your own exceptions
@@ -38,7 +38,7 @@ int main() {
 ```
 <img src="https://github.com/MykleR/libcerr/blob/main/screenshots/Screenshot_20251009_170959.png" height="200"/>
 
-#### Logging
+### Logging
 
 > The logging macros provide colorful, formatted output to `stderr` by default.
 > Use LOG_LEVEL to filter output: 0 is nothing, 1 is OK/ERR, 2 adds WARN, 3 adds INFO and 4 adds DEBUG.
@@ -59,7 +59,7 @@ int main() {
 ```
 <img src="https://github.com/MykleR/libcerr/blob/main/screenshots/screenshot_20251003_122852.png" height="200"/>
 
-#### Assertions
+### Assertions
  > Assertions will exit the program when the condition is not met even if protected by a TRY block.
 ```c
 int x = 5;
