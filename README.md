@@ -23,21 +23,20 @@
 // Define your own exceptions
 #define MY_EXCEPTION 10
 
-void might_fail()
-{
+void might_fail() {
     THROW_MSG(MY_EXCEPTION, "Function failed !");
 }
 
-int main()
-{
+int main() {
     TRY {
         might_fail();
-    }
-    CATCH(MY_EXCEPTION) {
+    } CATCH(MY_EXCEPTION) {
         LOG_ERR("Caught: %s", CERR_WHY());
     }
+    might_fail(); // this will abort
 }
 ```
+<img src="https://github.com/MykleR/libcerr/blob/main/screenshots/Screenshot_20251009_170959.png" height="200"/>
 
 #### Logging
 
