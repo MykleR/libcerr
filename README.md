@@ -11,33 +11,31 @@
 
 > - 🎯 **Exception Handling**: A `try-catch`-like system for C using `TRY`, `CATCH`, and `THROW` macros.
 > - 📣 **Rich Logging**: Colorful, leveled logging macros (`LOG_INFO`, `LOG_WARN`, `LOG_ERR`, etc.).
-> - 🚧 **Assertions**: An `ASSERT` macro that integrates seamlessly with the exception system.
+> - 🚧 **Assertions**: An `ASSERT` macro with enhanced logging for better debugging.
 > - 🔩 **Thread-Local**: Designed with thread safety in mind using thread-local storage for error contexts.
 > - 🛠️ **Customizable**: Easily configurable via macros.
 
 ## 📖 Basic Usage
 
-#### Example Setup
-```c
-#include <libcerr.h>
-// Define your own exception
-#define MY_EXCEPTION        10
-#define MY_OTHER_EXCEPTION  11
-
-void might_fail(int should_fail)
-{
-    THROW_IF_MSG(MY_EXCEPTION, should_fail, "Function failed !");
-    LOG_OK("Function did not fail.");
-}
-```
 #### Catching Exceptions
 ```c
-TRY {
-    might_fail(1); // This will throw
-    LOG_INFO("This will not be printed.");
+#include <libcerr.h>
+// Define your own exceptions
+#define MY_EXCEPTION 10
+
+void might_fail()
+{
+    THROW_MSG(MY_EXCEPTION, "Function failed !");
 }
-CATCH(MY_EXCEPTION, MY_OTHER_EXCEPTION) {
-    LOG_ERR("Exception: %s", CERR_WHY());
+
+int main()
+{
+    TRY {
+        might_fail();
+    }
+    CATCH(MY_EXCEPTION) {
+        LOG_ERR("Caught: %s", CERR_WHY());
+    }
 }
 ```
 
@@ -48,28 +46,27 @@ CATCH(MY_EXCEPTION, MY_OTHER_EXCEPTION) {
 
 ```c
 #define LOG_FDOUT stdout
-#define LOG_LEVEL 2
+#define LOG_LEVEL 3
 #include <libcerr.h>
 
-LOG_INFO("Starting application..."); // Log level 2, will not print
-int x = 5;
-LOG_DEBUG("This is a debug message. x = %d", x); // same here
-LOG_WARN("This is a warning message.");
-LOG_ERR("This is a fatal error message.);
-LOG_OK("Application finished.");
+int main() {
+	int x = 5;
+	LOG_INFO("Starting application with x = %d...", x);
+	LOG_DEBUG("This is a debug message."); // Log level 3, will not print
+	LOG_WARN("This is a warning message.");
+	LOG_ERR("This is a fatal error message.");
+	LOG_OK("Application finished.");
+}
 ```
 <img src="https://github.com/MykleR/libcerr/blob/main/screenshots/screenshot_20251003_122852.png" height="200"/>
 
 #### Assertions
- > Assertions will throw an exception (if in try) or exit the program when the condition is not met.
+ > Assertions will exit the program when the condition is not met even if protected by a TRY block.
 ```c
 int x = 5;
 TRY {
-    ASSERT(x == 10, "Fortunately, it will be catched !")
-} CATCH(CERR_E_ASSERT) {
-    LOG_ERR("Exception: %s", CERR_WHY());
-}
-ASSERT(x == 10, "This will not... bye");
+    ASSERT(x == 10, "This will fail and not be caught !")
+} CATCH_ALL_LOG() {}
 ```
 
 ## 🚀 Getting Started
@@ -86,8 +83,7 @@ ASSERT(x == 10, "This will not... bye");
 git clone https://github.com/MykleR/libcerr.git
 cd libcerr
 
-# Build it as a static/shared library
-# Link as you wish and include libcerr.h
+# Build it as a static/shared library (Link as you wish and include libcerr.h)
 make
 ```
 > [!IMPORTANT]
