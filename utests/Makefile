@@ -1,6 +1,6 @@
-NAME 				:= tests
+NAME 				:= tests_cerr
 
-TARGET_PATH			:= ../
+TARGET_PATH			:= ..
 TARGET_HEADERS		:= $(TARGET_PATH)/headers
 TARGET				:= $(TARGET_PATH)/libcerr.a
 
@@ -18,7 +18,8 @@ IFLAGS				:= -I $(TARGET_HEADERS) -I $(TEST_LIB_D)
 
 DIR_DUP			= mkdir -p $(@D)
 
-all: test
+all:
+	@$(MAKE) -B test --no-print-directory
 
 -include $(TEST_DEPENDENCIES)
 
@@ -38,7 +39,7 @@ $(TEST_OBJECTS_D)/%.o: %.c
 	@$(DIR_DUP)
 	@$(CXX) $(CXXFLAGS) $(IFLAGS) -c $< -o $@
 
-.PHONY: all
+.PHONY: all test
 
 
 RED			=	\033[31m

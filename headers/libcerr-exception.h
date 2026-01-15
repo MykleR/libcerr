@@ -1,9 +1,11 @@
 #pragma once
-#include "libcerr-log.h"
-#include "libcerr-assert.h"
+
 #include <stdlib.h>
 #include <setjmp.h>
 #include <stdint.h>
+
+#include <libcerr-log.h>
+#include <libcerr-assert.h>
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
   #define CERR_TLS _Thread_local
@@ -36,8 +38,11 @@ struct s_err_ctx {
 	char		msg[CERR_MSG_SIZE];
 };
 
-static CERR_TLS t_err_ctx *g__err = NULL;
+extern CERR_TLS t_err_ctx *g__cerr_ctx;
 
+#ifdef CERR_IMPLEMENTATION
+CERR_TLS t_err_ctx *g__cerr_ctx = NULL;
+#endif
 
 // ╔═════════════════════════════════[ MACROS ]════════════════════════════════╗
 
@@ -68,16 +73,16 @@ static CERR_TLS t_err_ctx *g__err = NULL;
 
 // DEFAULT THROW
 # define THROW(EXCEPTION) do {                                                 \
-	__CERR_IS_THROWABLE(EXCEPTION);\
+	__CERR_IS_THROWABLE(EXCEPTION);                                            \
 	__CERR_SET("");                                                            \
-	longjmp(g__err->frame, (EXCEPTION));                                       \
+	longjmp(g__cerr_ctx->frame, (EXCEPTION));                                  \
 } while (0)
 
 // Throw exception and specify reason
 # define THROW_MSG(EXCEPTION, MSG, ...) do {                                   \
 	__CERR_IS_THROWABLE(EXCEPTION);\
 	__CERR_SET(MSG, ##__VA_ARGS__);                                            \
-	longjmp(g__err->frame, (EXCEPTION));                                       \
+	longjmp(g__cerr_ctx->frame, (EXCEPTION));                                  \
 } while (0)
 
 // Throw only if condition is true
@@ -95,14 +100,14 @@ static CERR_TLS t_err_ctx *g__err = NULL;
 // ---- OTHER
 
 // Retreive the reason of the exception as a string of size CERR_MSG_SIZE
-#define CERR_WHY() (g__err ? g__err->msg : "")
+#define CERR_WHY() (g__cerr_ctx ? g__cerr_ctx->msg : "")
 
 
 // ╔══════════════════════════════════[ UTILS ]════════════════════════════════╗
 
 // helper function for attribute cleanup
 static inline void __err_cleanup(t_err_ctx* err) {
-	if (err) g__err = err->prev;
+	if (err) g__cerr_ctx = err->prev;
 }
 
 // Check if exception was thrown
@@ -117,7 +122,7 @@ static inline void __err_cleanup(t_err_ctx* err) {
 
 // Check if exception can be thrown
 #define __CERR_IS_THROWABLE(EXCEPTION)                                         \
-	ASSERT(g__err != NULL && g__err->thrown == CERR_E_NONE,                    \
+	ASSERT(g__cerr_ctx != NULL && g__cerr_ctx->thrown == CERR_E_NONE,          \
 		"Thrown exception[%d] not caught.", (EXCEPTION))
 
 // Clear and restore to previous exception context
@@ -127,14 +132,14 @@ static inline void __err_cleanup(t_err_ctx* err) {
 // Init the current exception context
 #define __CERR_INIT ({                                                         \
 	__err = (t_err_ctx){0};                                                    \
-	__err.prev = g__err;                                                       \
-	g__err = &__err;                                                           \
+	__err.prev = g__cerr_ctx;                                                  \
+	g__cerr_ctx = &__err;                                                      \
 	__err;                                                                     \
 })
 
 // Define the reason for the current exception context
 #define __CERR_SET(MSG, ...)                                                   \
-	snprintf(g__err->msg, CERR_MSG_SIZE, "Line %d, in %s: "MSG,                \
+	snprintf(g__cerr_ctx->msg, CERR_MSG_SIZE, "Line %d, in %s: "MSG,           \
 		__LINE__, __FILE__, ##__VA_ARGS__)
 
 
