@@ -13,10 +13,6 @@
   #define CERR_TLS __thread
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // ╔═══════════════════════════════[ DEFINITION ]══════════════════════════════╗
 
 #define		CERR_E_NONE		0
@@ -28,7 +24,6 @@ extern "C" {
 #ifndef		CERR_TYPE
 # define	CERR_TYPE uint_fast32_t
 #endif
-
 
 typedef struct s_err_ctx t_err_ctx;
 struct s_err_ctx {
@@ -45,7 +40,7 @@ CERR_TLS t_err_ctx *g__cerr_ctx = NULL;
 #endif
 
 // ╔═════════════════════════════════[ MACROS ]════════════════════════════════╗
-
+// ---- TRY / CATCH
 // DEFAULT TRY STATEMENT
 # define TRY                                                                   \
 	for (t_err_ctx __err __CERR_CLEANUP=__CERR_INIT, *__p=&__err; __p; __p=0)  \
@@ -57,20 +52,20 @@ CERR_TLS t_err_ctx *g__cerr_ctx = NULL;
 
 // Catches everything else not catched before
 # define CATCH_ALL()                                                           \
-		else
+	else
 
 // Catches exceptions and log the reason
 # define CATCH_LOG(...)                                                        \
 	CATCH(__VA_ARGS__)                                                         \
-	for (char __i=1; __i; __i=0, LOG_ERR("%s", CERR_WHY()))
+	for (char __i=1; __i; __i=0, LOG_ERR(__CERR_M_CAUGHT, __FILE__, CERR_WHY()))
 
 // Catches everything else and log the reason
 # define CATCH_ALL_LOG()                                                       \
 	CATCH_ALL()                                                                \
-	for (char __i=1; __i; __i=0, LOG_ERR("%s", CERR_WHY()))
+	for (char __i=1; __i; __i=0, LOG_ERR(__CERR_M_CAUGHT, __FILE__, CERR_WHY()))
+
 
 // ---- THROW
-
 // DEFAULT THROW
 # define THROW(EXCEPTION) do {                                                 \
 	__CERR_IS_THROWABLE(EXCEPTION);                                            \
@@ -105,10 +100,9 @@ CERR_TLS t_err_ctx *g__cerr_ctx = NULL;
 
 // ╔══════════════════════════════════[ UTILS ]════════════════════════════════╗
 
-// helper function for attribute cleanup
-static inline void __err_cleanup(t_err_ctx* err) {
-	if (err) g__cerr_ctx = err->prev;
-}
+#define		__CERR_M_CAUGHT		"Exception caught in %s, thrown %s"
+#define		__CERR_M_UNCAUGHT	"Uncaught exception[%d]"
+#define		__CERR_M_FORMAT		"line %d in %s: "
 
 // Check if exception was thrown
 #define __CERR_IS_CATCHED(...) ({                                              \
@@ -123,7 +117,7 @@ static inline void __err_cleanup(t_err_ctx* err) {
 // Check if exception can be thrown
 #define __CERR_IS_THROWABLE(EXCEPTION)                                         \
 	ASSERT(g__cerr_ctx != NULL && g__cerr_ctx->thrown == CERR_E_NONE,          \
-		"Thrown exception[%d] not caught.", (EXCEPTION))
+		__CERR_M_UNCAUGHT, (EXCEPTION))
 
 // Clear and restore to previous exception context
 #define __CERR_CLEANUP                                                         \
@@ -139,10 +133,11 @@ static inline void __err_cleanup(t_err_ctx* err) {
 
 // Define the reason for the current exception context
 #define __CERR_SET(MSG, ...)                                                   \
-	snprintf(g__cerr_ctx->msg, CERR_MSG_SIZE, "Line %d, in %s: "MSG,           \
+	snprintf(g__cerr_ctx->msg, CERR_MSG_SIZE, __CERR_M_FORMAT MSG,             \
 		__LINE__, __FILE__, ##__VA_ARGS__)
 
-
-#ifdef __cplusplus
+// helper function for attribute cleanup
+static inline void __err_cleanup(t_err_ctx* err) {
+	if (err) g__cerr_ctx = err->prev;
 }
-#endif
+
