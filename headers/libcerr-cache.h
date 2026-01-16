@@ -16,17 +16,12 @@
 # else
 // ╔═══════════════════════════════[ DEFINITION ]══════════════════════════════╗
 
-# define __CACHE_INIT_SIZE 2
-# define __CACHE_FD_MAX 1024
-
-# define __CACHE_FULL_MSG "libcerr-cache full, exiting safely..."
-# define __CACHE_FAIL_MSG "libcerr-cache malloc failed, exiting safely..."
-# define __CACHE_WARN_MSG "libcerr-cache tracked possible memory leak of %u allocations"
-# define __CACHE_FATAL_MSG "libcerr-cache not Initialized."
+# ifndef CERR_CACHE_SIZE
+# define CERR_CACHE_SIZE	0x10000
+# endif
 
 typedef struct s_cerr_cache {
-	void		**allocs;
-	uint32_t	cap;
+	void		*allocs[CERR_CACHE_SIZE];
 	uint32_t	len;
 }	t_cerr_cache;
 
@@ -34,104 +29,90 @@ extern t_cerr_cache g__cerr_cache;
 
 // ╔═════════════════════════════════[ MACROS ]════════════════════════════════╗
 
-# define MALLOC(S) ({ \
-	__CACHE_ASSERT_INIT(g__cerr_cache); \
-	if (__builtin_expect(g__cerr_cache.len >= g__cerr_cache.cap, 0)) \
-		__CACHE_REALLOC(g__cerr_cache); \
-	void *ptr = malloc(S); \
-	ASSERT(ptr, __CACHE_FAIL_MSG); \
-	__CACHE_INSERT(g__cerr_cache, ptr); \
-	ptr; \
+# define MALLOC(S) ({                                                          \
+	__CACHE_ASSERT_FULL();                                                     \
+	void *__res = malloc(S);                                                   \
+	ASSERT(__res, __CACHE_FAIL_MSG);                                           \
+	__CACHE_INSERT(__res);                                                     \
+	__res;                                                                     \
 })
 
-# define CALLOC(N, S) ({ \
-	__CACHE_ASSERT_INIT(g__cerr_cache); \
-	if (__builtin_expect(g__cerr_cache.len >= g__cerr_cache.cap, 0)) \
-		__CACHE_REALLOC(); \
-	void *ptr = calloc(N, S); \
-	ASSERT(ptr, __CACHE_FAIL_MSG); \
-	__CACHE_INSERT(g__cerr_cache, ptr); \
-	ptr; \
+# define CALLOC(N, S) ({                                                       \
+	__CACHE_ASSERT_FULL();                                                     \
+	void *__res = calloc(N, S);                                                \
+	ASSERT(__res, __CACHE_FAIL_MSG);                                           \
+	__CACHE_INSERT(__res);                                                     \
+	__res;                                                                     \
 })
 
-# define REALLOC(P, S) ({ \
-	__CACHE_ASSERT_INIT(g__cerr_cache); \
-	void *ptr = realloc(P, S); \
-	ASSERT(ptr != NULL, __CACHE_FAIL_MSG); \
-	__CACHE_REMOVE(g__cerr_cache, P); \
-	__CACHE_INSERT(g__cerr_cache, ptr); \
-	ptr; \
+# define REALLOC(P, S) ({                                                      \
+	void *__prev = P;                                                          \
+	void *__res = realloc(P, S);                                               \
+	ASSERT(__res, __CACHE_FAIL_MSG);                                           \
+	__CACHE_REMOVE(__prev);                                                    \
+	__CACHE_INSERT(__res);                                                     \
+	__res;                                                                     \
 })
 
-# define FREE(P) do { \
-	__CACHE_ASSERT_INIT(g__cerr_cache); \
-	__CACHE_REMOVE(g__cerr_cache, P); \
-	free(P); \
-	P = NULL; \
+# define FREE(P) do {                                                          \
+	void *__f = P;                                                             \
+	if (__builtin_expect(__f == NULL, 0))                                      \
+		break;                                                                 \
+	if (__builtin_expect(__CACHE_REMOVE(__f), 1))                              \
+		free(__f);                                                             \
+	else LOG_WARN(__CACHE_FREE_MSG, __f);                                      \
 } while (0)
 
 // ╔══════════════════════════════════[ UTILS ]════════════════════════════════╗
 
-# define __CACHE_ASSERT_INIT(C) \
-	ASSERT((C).allocs != NULL, __CACHE_FATAL_MSG);
+# define __CACHE_FULL_MSG "libcerr: cache, limit reached, possible memory leak"
+# define __CACHE_FAIL_MSG "libcerr: cache, malloc failed, exiting safely..."
+# define __CACHE_FREE_MSG "libcerr: cache, double free prevented for pointer %p"
+# define __CACHE_WARN_MSG "libcerr: exiting... freed %u possible memory leak"
 
-# define __CACHE_INIT(C) do { \
-	LOG_DEBUG("Initializing cache..."); \
-	(C).allocs = calloc((C).cap, sizeof(void *)); \
-	ASSERT((C).allocs, __CACHE_FAIL_MSG); \
+# define __CACHE_MOD(X) ((X) & (CERR_CACHE_SIZE - 1))
+
+# define __CACHE_ASSERT_FULL()                                                 \
+	ASSERT(g__cerr_cache.len < CERR_CACHE_SIZE, __CACHE_FULL_MSG)
+
+# define __CACHE_CLEAR() do {                                                  \
+	for (uint32_t i = 0; i < CERR_CACHE_SIZE; ++i)                             \
+		free(g__cerr_cache.allocs[i]);                                         \
+	if (g__cerr_cache.len)                                                     \
+		LOG_WARN(__CACHE_WARN_MSG, g__cerr_cache.len);                         \
+	g__cerr_cache = (t_cerr_cache){0};                                         \
 } while (0)
 
-# define __CACHE_CLEAR(C) do { \
-	LOG_DEBUG("Clearing cache..."); \
-	for (uint32_t i = 0; i < (C).cap; ++i) free((C).allocs[i]); \
-	if ((C).len) LOG_WARN(__CACHE_WARN_MSG, (C).len); \
-	free((C).allocs); \
-	(C) = (t_cerr_cache){0}; \
-} while (0)
-
-# define __CACHE_REALLOC(C) do { \
-	ASSERT(((C).cap << 1) >> 1 == (C).cap, __CACHE_FULL_MSG); \
-	(C).cap = (C).cap << 1; \
-	void **new_allocs = calloc((C).cap, sizeof(void *)); \
-	ASSERT(new_allocs, __CACHE_FAIL_MSG); \
-	for (uint32_t i = 0; i < (C).len; ++i) { \
-		uint32_t j = ((uintptr_t)(C).allocs[i]) & ((C).cap - 1); \
-		for (; new_allocs[j]; j = (j + 1) & ((C).cap - 1)); \
-		new_allocs[j] = (C).allocs[i]; } \
-	free((C).allocs); \
-	(C).allocs = new_allocs; \
-} while (0)
-
-# define __CACHE_INDEX(C, P) ({ \
-	uint32_t i = ((uintptr_t)P) & ((C).cap - 1); \
-	uint32_t start = i; \
-	int looped = 0; \
-	for (; (C).allocs[i] != P && !looped; i = (i + 1) & ((C).cap - 1)) \
-		looped = (i == start - 1); \
-	(looped) ? (uint32_t)(-1) : i; \
+# define __CACHE_SEARCH(X, S) ({                                               \
+	void	*__x = X;                                                          \
+	uint32_t __i = S;                                                          \
+	uint32_t __c = 0;                                                          \
+	for (;g__cerr_cache.allocs[__i] != __x && __c < CERR_CACHE_SIZE; ++__c)    \
+		__i = __CACHE_MOD(__i + 1);                                            \
+	__c < CERR_CACHE_SIZE ? __i : UINT32_MAX;                                  \
 })
 
-# define __CACHE_INSERT(C, P) do { \
-	uint32_t i = __CACHE_INDEX(C, NULL); \
-	ASSERT(i < UINT32_MAX, __CACHE_FULL_MSG); \
-	(C).allocs[i] = P; \
-	++(C).len; \
-} while (0)
+# define __CACHE_INSERT(P) ({                                                  \
+	void	*__ptr = P;														   \
+	uint32_t __i = __CACHE_SEARCH(NULL, __CACHE_MOD((uintptr_t)__ptr));        \
+	g__cerr_cache.allocs[__i] = __ptr;                                         \
+	++g__cerr_cache.len;                                                       \
+})
 
-# define __CACHE_REMOVE(C, P) do { \
-	uint32_t i = __CACHE_INDEX(C, P); \
-	if (__builtin_expect(i < UINT32_MAX, 1)) {\
-		(C).allocs[i] = NULL; \
-		--(C).len; \
-}} while (0)
+# define __CACHE_REMOVE(P) ({                                                  \
+	void	*__ptr = P;														   \
+	uint32_t __i = __CACHE_SEARCH(__ptr, __CACHE_MOD((uintptr_t)__ptr));       \
+	if (__builtin_expect(__i < UINT32_MAX, 1)) {                               \
+		g__cerr_cache.allocs[__i] = NULL;                                      \
+		--g__cerr_cache.len; }                                                 \
+	__i < UINT32_MAX;														   \
+})
 
 # ifdef CERR_IMPLEMENTATION
-t_cerr_cache g__cerr_cache = {.allocs=NULL, .cap=__CACHE_INIT_SIZE, .len=0 };
-
-__attribute__((constructor))
-void __cerr_cache_init(void) { __CACHE_INIT(g__cerr_cache); }
+t_cerr_cache g__cerr_cache = {.allocs={0}, .len=0};
 
 __attribute__((destructor))
-void __cerr_cache_clear(void) { __CACHE_CLEAR(g__cerr_cache); }
+void __cerr_cache_clear(void) { __CACHE_CLEAR(); }
 # endif
+
 # endif
