@@ -16,6 +16,7 @@
 # else
 // ╔═══════════════════════════════[ DEFINITION ]══════════════════════════════╗
 
+// IMPORTANT: CERR_CACHE_SIZE MUST BE A POWER OF TWO
 # ifndef CERR_CACHE_SIZE
 # define CERR_CACHE_SIZE	0x10000
 # endif
@@ -30,89 +31,91 @@ extern t_cerr_cache g__cerr_cache;
 // ╔═════════════════════════════════[ MACROS ]════════════════════════════════╗
 
 # define MALLOC(S) ({                                                          \
-	__CACHE_ASSERT_FULL();                                                     \
+	ASSERT(g__cerr_cache.len < CERR_CACHE_SIZE, __CERR_M_FULL)                 \
 	void *__res = malloc(S);                                                   \
-	ASSERT(__res, __CACHE_FAIL_MSG);                                           \
-	__CACHE_INSERT(__res);                                                     \
+	ASSERT(__res, __CERR_M_AFAIL);                                             \
+	__CERR_CACHE_INSERT(__res);                                                \
 	__res;                                                                     \
 })
 
 # define CALLOC(N, S) ({                                                       \
-	__CACHE_ASSERT_FULL();                                                     \
+	ASSERT(g__cerr_cache.len < CERR_CACHE_SIZE, __CERR_M_FULL)                 \
 	void *__res = calloc(N, S);                                                \
-	ASSERT(__res, __CACHE_FAIL_MSG);                                           \
-	__CACHE_INSERT(__res);                                                     \
+	ASSERT(__res, __CERR_M_AFAIL);                                             \
+	__CERR_CACHE_INSERT(__res);                                                \
 	__res;                                                                     \
 })
 
 # define REALLOC(P, S) ({                                                      \
-	void *__prev = P;                                                          \
-	void *__res = realloc(P, S);                                               \
-	ASSERT(__res, __CACHE_FAIL_MSG);                                           \
-	__CACHE_REMOVE(__prev);                                                    \
-	__CACHE_INSERT(__res);                                                     \
+	void	*__res = NULL;                                                     \
+	void	*__prev = P;                                                       \
+	uint32_t __rm = !__prev || __CERR_CACHE_REMOVE(__prev);                    \
+	ASSERT(__rm, __CERR_M_RFAIL, __prev);                                      \
+	__res = realloc(__prev, S);                                                \
+	ASSERT(__res, __CERR_M_AFAIL);                                             \
+	__CERR_CACHE_INSERT(__res);                                                \
 	__res;                                                                     \
 })
 
 # define FREE(P) do {                                                          \
-	void *__f = P;                                                             \
-	if (__builtin_expect(__f == NULL, 0))                                      \
-		break;                                                                 \
-	if (__builtin_expect(__CACHE_REMOVE(__f), 1))                              \
+	void	*__f = P;                                                          \
+	uint32_t __rm = 0;                                                         \
+	if (__builtin_expect(!__f, 0)) break;                                      \
+	__rm = __CERR_CACHE_REMOVE(__f);                                           \
+	if (__builtin_expect(__rm, 1))                                             \
 		free(__f);                                                             \
-	else LOG_WARN(__CACHE_FREE_MSG, __f);                                      \
+	else LOG_WARN(__CERR_M_FFAIL, __f);                                        \
 } while (0)
 
 // ╔══════════════════════════════════[ UTILS ]════════════════════════════════╗
 
-# define __CACHE_FULL_MSG "libcerr: cache, limit reached, possible memory leak"
-# define __CACHE_FAIL_MSG "libcerr: cache, malloc failed, exiting safely..."
-# define __CACHE_FREE_MSG "libcerr: cache, double free prevented for pointer %p"
-# define __CACHE_WARN_MSG "libcerr: exiting... freed %u possible memory leak"
+# define __CERR_M_FULL "libcerr: cache, limit reached, possible memory leak."
+# define __CERR_M_AFAIL "libcerr: cache, alloc failed, exiting safely."
+# define __CERR_M_FFAIL "libcerr: cache, ignoring free on untracked pointer %p"
+# define __CERR_M_RFAIL "libcerr: cache, realloc on untracked pointer %p"
+# define __CERR_M_WEXIT "libcerr: cache exit, freed %u possible memory leak."
 
-# define __CACHE_MOD(X) ((X) & (CERR_CACHE_SIZE - 1))
+# define __CERR_MOD(X) ((X) & (CERR_CACHE_SIZE - 1))
 
-# define __CACHE_ASSERT_FULL()                                                 \
-	ASSERT(g__cerr_cache.len < CERR_CACHE_SIZE, __CACHE_FULL_MSG)
-
-# define __CACHE_CLEAR() do {                                                  \
+# define __CERR_CACHE_CLEAR() do {                                             \
 	for (uint32_t i = 0; i < CERR_CACHE_SIZE; ++i)                             \
 		free(g__cerr_cache.allocs[i]);                                         \
 	if (g__cerr_cache.len)                                                     \
-		LOG_WARN(__CACHE_WARN_MSG, g__cerr_cache.len);                         \
+		LOG_WARN(__CERR_M_WEXIT, g__cerr_cache.len);                           \
 	g__cerr_cache = (t_cerr_cache){0};                                         \
 } while (0)
 
-# define __CACHE_SEARCH(X, S) ({                                               \
+# define __CERR_CACHE_SEARCH(X, START) ({                                      \
 	void	*__x = X;                                                          \
-	uint32_t __i = S;                                                          \
+	uint32_t __i = START;                                                      \
 	uint32_t __c = 0;                                                          \
 	for (;g__cerr_cache.allocs[__i] != __x && __c < CERR_CACHE_SIZE; ++__c)    \
-		__i = __CACHE_MOD(__i + 1);                                            \
-	__c < CERR_CACHE_SIZE ? __i : UINT32_MAX;                                  \
+		__i = __CERR_MOD(__i + 1);                                             \
+	__c < CERR_CACHE_SIZE ? __i : __c;                                         \
 })
 
-# define __CACHE_INSERT(P) ({                                                  \
-	void	*__ptr = P;														   \
-	uint32_t __i = __CACHE_SEARCH(NULL, __CACHE_MOD((uintptr_t)__ptr));        \
+# define __CERR_CACHE_INSERT(P) ({                                             \
+	void	*__ptr = P;                                                        \
+	uint32_t __i = __CERR_CACHE_SEARCH(NULL, __CERR_MOD((uintptr_t)__ptr));    \
 	g__cerr_cache.allocs[__i] = __ptr;                                         \
 	++g__cerr_cache.len;                                                       \
 })
 
-# define __CACHE_REMOVE(P) ({                                                  \
-	void	*__ptr = P;														   \
-	uint32_t __i = __CACHE_SEARCH(__ptr, __CACHE_MOD((uintptr_t)__ptr));       \
-	if (__builtin_expect(__i < UINT32_MAX, 1)) {                               \
+# define __CERR_CACHE_REMOVE(P) ({                                             \
+	void	*__ptr = P;                                                        \
+	uint32_t __i = __CERR_CACHE_SEARCH(__ptr, __CERR_MOD((uintptr_t)__ptr));   \
+	uint32_t __bool = __i < CERR_CACHE_SIZE;                                   \
+	if (__builtin_expect(__bool, 1)) {                                         \
 		g__cerr_cache.allocs[__i] = NULL;                                      \
-		--g__cerr_cache.len; }                                                 \
-	__i < UINT32_MAX;														   \
+		--g__cerr_cache.len;                                                   \
+	} __bool;                                                                  \
 })
 
 # ifdef CERR_IMPLEMENTATION
 t_cerr_cache g__cerr_cache = {.allocs={0}, .len=0};
 
 __attribute__((destructor))
-void __cerr_cache_clear(void) { __CACHE_CLEAR(); }
+void __cerr_cache_clear(void) { __CERR_CACHE_CLEAR(); }
 # endif
 
 # endif
