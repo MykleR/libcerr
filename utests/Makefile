@@ -8,7 +8,7 @@ TEST_SOURCES_D		:= .
 TEST_OBJECTS_D		:= .objs
 TEST_LIB_D			:= utest.h
 
-TEST_SOURCES		:= tests_catch.c tests_try.c tests_main.c
+TEST_SOURCES		:= tests_catch.c tests_try.c tests_main.c tests_cache.c
 TEST_OBJECTS		:= $(TEST_SOURCES:%.c=$(TEST_OBJECTS_D)/%.o)
 TEST_DEPENDENCIES	:= $(TEST_OBJECTS:.o=.d)
 
