@@ -111,7 +111,7 @@ int main() {
 
 int main() {
 	void *ptr = some_function();
-    FREE();
+    FREE(ptr);
 }
 ```
 
