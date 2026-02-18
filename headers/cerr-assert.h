@@ -4,11 +4,14 @@
 
 // ╔═══════════════════════════════[ ASSERTIONS ]══════════════════════════════╗
 
+#ifndef CERR_ASSERT_FDOUT
+# define CERR_ASSERT_FDOUT 2
+#endif
 
 #ifndef NDEBUG
 
 # define __LOG_ASSERT(MSG, ...)                                                \
-	fprintf(LOG_FDOUT, __F_SEP(__C_RED_B) " > " MSG "\n",                      \
+	fprintf(CERR_ASSERT_FDOUT, __F_SEP(__C_RED_B) " > " MSG "\n",              \
 		"assert: ", ##__VA_ARGS__)
 
 # define ASSERT(COND, MSG, ...)                                                \
