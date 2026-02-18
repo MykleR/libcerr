@@ -3,9 +3,9 @@
 # include <stdint.h>
 # include <stdlib.h>
 
-# include <libcerr-assert.h>
+# include "cerr-assert.h"
 
-# ifdef CERR_NCACHE
+# ifndef CERR_CACHE
 // No cache
 
 # define MALLOC(S)			malloc(S)

@@ -6,12 +6,12 @@
 
 # define __LOG_LEVELS 4
 
-# ifndef LOG_FDOUT
-#  define LOG_FDOUT stderr
+# ifndef CERR_LOG_FDOUT
+#  define CERR_LOG_FDOUT stderr
 # endif
 
-# ifndef LOG_LEVEL
-#  define LOG_LEVEL __LOG_LEVELS
+# ifndef CERR_LOG_LEVEL
+#  define CERR_LOG_LEVEL __LOG_LEVELS
 # endif
 
 # define 	__F_COLOR(C, X)		C X __F_RESET
@@ -30,41 +30,51 @@
 
 # ifndef NVERBOSE
 #  define __LOG(COLOR, TITLE, MSG, ...)	\
-	fprintf(LOG_FDOUT, __F_SEP(COLOR) " > " MSG "\n", TITLE, ##__VA_ARGS__)
+	fprintf(CERR_LOG_FDOUT, __F_SEP(COLOR) " > " MSG "\n", TITLE, ##__VA_ARGS__)
 
 #  define LOG_NL() \
-	fprintf(LOG_FDOUT, "\n")
+	fprintf(CERR_LOG_FDOUT, "\n")
+
+#  define LOG_IF(COND, LOG, ...) \
+	if (COND) LOG(__VA_ARGS__)
 # else
 #  define __LOG(COLOR, TITLE, MSG, ...)	((void)0)
 #  define LOG_NL()						((void)0)
+#  define LOG_IF()						((void)0)
 # endif
 
-# if LOG_LEVEL >= __LOG_LEVELS
+# if CERR_LOG_LEVEL >= __LOG_LEVELS
 #  define LOG_DEBUG(MSG, ...) __LOG(__C_BLUE, "debug: ", MSG, ##__VA_ARGS__)
 # else
 #  define LOG_DEBUG(MSG, ...) ((void)0)
 # endif
 
-# if LOG_LEVEL >= __LOG_LEVELS - 1
+# if CERR_LOG_LEVEL >= __LOG_LEVELS - 1
 #  define LOG_INFO(MSG, ...) __LOG(__C_CYAN, "info: ", MSG, ##__VA_ARGS__)
 # else
 #  define LOG_INFO(MSG, ...) ((void)0)
 # endif
 
-# if LOG_LEVEL >= __LOG_LEVELS - 2
+# if CERR_LOG_LEVEL >= __LOG_LEVELS - 2
 #  define LOG_WARN(MSG, ...) __LOG(__C_YELLOW, "warning: ", MSG, ##__VA_ARGS__)
 # else
 #  define LOG_WARN(MSG, ...) ((void)0)
 # endif
 
-# if LOG_LEVEL >= __LOG_LEVELS - 3
+# if CERR_LOG_LEVEL >= __LOG_LEVELS - 3
 #  define LOG_OK(MSG, ...) __LOG(__C_GREEN, "done: ", MSG, ##__VA_ARGS__)
 # else
 #  define LOG_OK(MSG, ...) ((void)0)
 # endif
 
-# if LOG_LEVEL >= __LOG_LEVELS - 3
+# if CERR_LOG_LEVEL >= __LOG_LEVELS - 3
 #  define LOG_ERR(MSG, ...) __LOG(__C_RED, "error: ", MSG, ##__VA_ARGS__)
 # else
 #  define LOG_ERR(MSG, ...) ((void)0)
 # endif
+
+#define LOG_IF_DEBUG(COND, ...) LOG_IF(COND, LOG_DEBUG, __VA_ARGS__)
+#define LOG_IF_INFO(COND, ...)	LOG_IF(COND, LOG_INFO, __VA_ARGS__)
+#define LOG_IF_WARN(COND, ...)	LOG_IF(COND, LOG_WARN, __VA_ARGS__)
+#define LOG_IF_ERR(COND, ...)	LOG_IF(COND, LOG_ERR, __VA_ARGS__)
+#define LOG_IF_OK(COND, ...)	LOG_IF(COND, LOG_OK, __VA_ARGS__)

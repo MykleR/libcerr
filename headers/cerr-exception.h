@@ -4,8 +4,8 @@
 #include <setjmp.h>
 #include <stdint.h>
 
-#include <libcerr-log.h>
-#include <libcerr-assert.h>
+#include "cerr-log.h"
+#include "cerr-assert.h"
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
   #define CERR_TLS _Thread_local
@@ -140,4 +140,3 @@ CERR_TLS t_err_ctx *g__cerr_ctx = NULL;
 static inline void __err_cleanup(t_err_ctx* err) {
 	if (err) g__cerr_ctx = err->prev;
 }
-
