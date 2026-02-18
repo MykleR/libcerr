@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cerr-log.h"
+#include "cerr-colors.h"
 
 // ╔═══════════════════════════════[ ASSERTIONS ]══════════════════════════════╗
 
@@ -11,7 +11,7 @@
 #ifndef NDEBUG
 
 # define __LOG_ASSERT(MSG, ...)                                                \
-	fprintf(CERR_ASSERT_FDOUT, __F_SEP(__C_RED_B) " > " MSG "\n",              \
+	fprintf(CERR_ASSERT_FDOUT, __SEP($bblack $lred) " > " MSG "\n",            \
 		"assert: ", ##__VA_ARGS__)
 
 # define ASSERT(COND, MSG, ...)                                                \
