@@ -1,4 +1,4 @@
-# define CERR_IMPLEMENTATION
+#define CERR_IMPLEMENTATION
 #include "tests.h"
 #include <time.h>
 

@@ -5,7 +5,7 @@
 // ╔═══════════════════════════════[ ASSERTIONS ]══════════════════════════════╗
 
 #ifndef CERR_ASSERT_FDOUT
-# define CERR_ASSERT_FDOUT 2
+# define CERR_ASSERT_FDOUT stderr
 #endif
 
 #ifndef NDEBUG

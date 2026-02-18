@@ -1,7 +1,8 @@
 #pragma once
 
+# define CERR_CACHE
 # include <utest.h>
-# include <libcerr.h>
+# include "cerr.h"
 
 # define UNUSED __attribute__((unused))
 
