@@ -43,11 +43,11 @@ int main() {
 ### Logging
 
 > The logging macros provide colorful, formatted output to `stderr` by default.
-> Use LOG_LEVEL to filter output: 0 is nothing, 1 is OK/ERR, 2 adds WARN, 3 adds INFO and 4 adds DEBUG.
+> Use CERR_LOG_LEVEL to filter output: 0 is nothing, 1 is OK/ERR, 2 adds WARN, 3 adds INFO and 4 adds DEBUG.
 
 ```c
-#define LOG_FDOUT stdout
-#define LOG_LEVEL 3
+#define CERR_LOG_FDOUT stdout
+#define CERR_LOG_LEVEL 3
 #include <libcerr.h>
 
 int main() {
@@ -76,6 +76,7 @@ TRY {
 > The cache system uses a fixed-size hash table (default `CERR_CACHE_SIZE` = 65536 entries) for O(1) average insertion and removal. You can customize this by defining `CERR_CACHE_SIZE` before including the header (must be a power of 2).
 
 ```c
+#define CERR_CACHE
 #define CERR_IMPLEMENTATION
 #include <libcerr.h>
 
@@ -97,15 +98,21 @@ int main() {
 | Macro | Description | Where to Define |
 |-------|-------------|-----------------|
 | `CERR_IMPLEMENTATION` | Instantiates global variables and cleanup functions required by the library. | Define in **exactly one** source file, preferably your entry point (e.g., `main.c`). |
-| `CERR_NCACHE` | Disables the automatic memory caching system. `MALLOC()`, `CALLOC()`, `REALLOC()`, and `FREE()` become direct wrappers to standard library functions. | Define in **all** source files that include `<libcerr.h>` if you want to disable caching.  |
+| `CERR_CACHE` | Enables the automatic memory caching system. Or else `MALLOC()`, `CALLOC()`, `REALLOC()`, and `FREE()` become direct wrappers to standard library functions. | Define first in **all** source files that include `<libcerr.h>` if you want to enable caching.  |
 | `CERR_CACHE_SIZE` | Sets the maximum number of tracked allocations (default: `0x10000` = 65536). Must be a power of 2. | Define before including the header if you need a different limit. |
-| `LOG_LEVEL` | Sets the logging verbosity (0-4). | Define before including the header. |
-| `LOG_FDOUT` | Sets the output file descriptor for logging (default: `stderr`). | Define before including the header. |
+| `CERR_LOG_LEVEL` | Sets the logging verbosity (0-4). | Define before including the header. |
+| `CERR_LOG_FDOUT` | Sets the output file descriptor for logging (default: `stderr`). | Define before including the header. |
+| `CERR_ASSERT_FDOUT` | Sets the output file descriptor for asserting (default: `stderr`). | Define before including the header. |
+
+> [!NOTE]
+> you can also define `CERR_NCACHE` at compile time:
+> - `gcc -DCERR_CACHE -I libcerr/headers main.c other.c -o myprogram`
 
 ### Example: Multi-file Project Setup
 
-**main.c** (entry point):
+> **main.c** (entry point):
 ```c
+#define CERR_CACHE
 #define CERR_IMPLEMENTATION  // Only define this ONCE in your entire project
 #include <libcerr.h>
 
@@ -115,8 +122,9 @@ int main() {
 }
 ```
 
-**other_file.c** (other source files):
+> **other_file.c** (other source files):
 ```c
+#define CERR_CACHE
 #include <libcerr.h>  // No CERR_IMPLEMENTATION here
 
 void *some_function() {
@@ -124,18 +132,10 @@ void *some_function() {
 }
 ```
 
-### Example: Disabling Memory Cache
-
-If you want to use standard `malloc`/`free` without tracking, define `CERR_NCACHE` at compile time:
-
-```bash
-gcc -DCERR_NCACHE -I./headers main.c other_file.c -o myprogram
-```
-
 ## 🚀 Getting Started
 
 > [!IMPORTANT]
-> The project is still in its early stages and, for now, everything fits in the header, so no linking is necessary.
+> The project is still in its early stages and, for now, everything fits in the header, so no linking is necessary, just include libcerr.h.
 > (GCC or Clang remains mandatory for compilation)
 
 ### Prerequisites
